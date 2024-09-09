@@ -59,14 +59,14 @@ resource "azurerm_lb" "lb" {
 
 # Create Load Balancer Backend Pool
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
-  resource_group_name = azurerm_resource_group.rg.name
+  
   loadbalancer_id     = azurerm_lb.lb.id
   name                = "example-backend-pool"
 }
 
 # Create Load Balancer Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
-  resource_group_name = azurerm_resource_group.rg.name
+ 
   loadbalancer_id     = azurerm_lb.lb.id
   name                = "example-health-probe"
   protocol            = "Http"
@@ -78,16 +78,17 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 
 # Create Load Balancer Rule for HTTP traffic
 resource "azurerm_lb_rule" "lb_rule" {
-  resource_group_name            = azurerm_resource_group.rg.name
+  
   loadbalancer_id                = azurerm_lb.lb.id
   name                           = "example-lb-rule"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
   backend_port                   = 80
-  backend_address_pool_id        = azurerm_lb_backend_address_pool.lb_backend_pool.id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_backend_pool.id]  # Corrected this line
   probe_id                       = azurerm_lb_probe.lb_health_probe.id
 }
+
 
 # Network Security Group for VMs
 resource "azurerm_network_security_group" "nsg" {
@@ -115,10 +116,9 @@ resource "azurerm_network_interface" "nic1" {
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                                    = "internal"
-    subnet_id                               = azurerm_subnet.subnet.id
-    private_ip_address_allocation           = "Dynamic"
-    load_balancer_backend_address_pools_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
   }
 }
 
@@ -129,12 +129,26 @@ resource "azurerm_network_interface" "nic2" {
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                                    = "internal"
-    subnet_id                               = azurerm_subnet.subnet.id
-    private_ip_address_allocation           = "Dynamic"
-    load_balancer_backend_address_pools_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
   }
 }
+
+# Associate Network Interface 1 with the Load Balancer Backend Pool
+resource "azurerm_network_interface_backend_address_pool_association" "nic1_lb_backend_pool_assoc" {
+  network_interface_id    = azurerm_network_interface.nic1.id
+  ip_configuration_name   = "internal"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_backend_pool.id
+}
+
+# Associate Network Interface 2 with the Load Balancer Backend Pool
+resource "azurerm_network_interface_backend_address_pool_association" "nic2_lb_backend_pool_assoc" {
+  network_interface_id    = azurerm_network_interface.nic2.id
+  ip_configuration_name   = "internal"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_backend_pool.id
+}
+
 
 # Create Virtual Machine 1
 resource "azurerm_linux_virtual_machine" "vm1" {
