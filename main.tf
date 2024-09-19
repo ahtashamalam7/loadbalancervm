@@ -145,7 +145,6 @@ resource "azurerm_network_interface" "nic_vm1" {
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip_vm1.id
-    backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   }
 }
 
@@ -160,7 +159,6 @@ resource "azurerm_network_interface" "nic_vm2" {
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip_vm2.id
-    backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   }
 }
 
@@ -192,6 +190,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm1.id]
+  backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   size                  = "Standard_B1s"
   os_disk {
     caching              = "ReadWrite"
@@ -220,6 +219,7 @@ resource "azurerm_linux_virtual_machine" "vm2" {
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm2.id]
+  backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   size                  = "Standard_B1s"
   os_disk {
     caching              = "ReadWrite"
