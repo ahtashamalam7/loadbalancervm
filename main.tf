@@ -58,13 +58,11 @@ resource "azurerm_lb" "mylb" {
 # Create Backend Address Pool for Load Balancer
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
   name                = "myBackendPool"
-  resource_group_name = azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.mylb.id
 }
 
 # Create Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
-  resource_group_name = azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.mylb.id
   name                = "httpProbe"
   protocol            = "Http"
@@ -76,14 +74,13 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 
 # Create Load Balancer Rule for HTTP traffic
 resource "azurerm_lb_rule" "lb_rule" {
-  resource_group_name            = azurerm_resource_group.rg.name
   loadbalancer_id                = azurerm_lb.mylb.id
   name                           = "my-lb-rule"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
   backend_port                   = 80
-  backend_address_pool_id        = azurerm_lb_backend_address_pool.lb_backend_pool.id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_backend_pool.id]  # Fixed attribute
   probe_id                       = azurerm_lb_probe.lb_health_probe.id
 }
 
@@ -128,10 +125,7 @@ resource "azurerm_network_interface" "nic_vm1" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   }
-
-  network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
 # Create Network Interface for VM2
@@ -144,10 +138,7 @@ resource "azurerm_network_interface" "nic_vm2" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   }
-
-  network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
 # Create Public IP for VM1
@@ -165,6 +156,20 @@ resource "azurerm_public_ip" "vm2_public_ip" {
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
 }
+
+# Associate NSG with subnet for load balancer
+resource "azurerm_subnet_network_security_group_association" "nsg_assoc_vm1" {
+  subnet_id                 = azurerm_subnet.subnet.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+# Associate NSG with subnet for load balancer
+resource "azurerm_subnet_network_security_group_association" "nsg_assoc_vm2" {
+  subnet_id                 = azurerm_subnet.subnet.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+
 
 locals {
   custom_script = <<-EOF
