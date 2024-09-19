@@ -15,13 +15,13 @@ provider "azurerm" {
 
 # Create Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "lb-rg"
+  name     = "example-resources"
   location = "East US"
 }
 
 # Create Virtual Network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "lb-vnet"
+  name                = "example-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -29,7 +29,7 @@ resource "azurerm_virtual_network" "vnet" {
 
 # Create Subnet
 resource "azurerm_subnet" "subnet" {
-  name                 = "lb-subnet"
+  name                 = "example-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -37,7 +37,7 @@ resource "azurerm_subnet" "subnet" {
 
 # Create Public IP for VM1
 resource "azurerm_public_ip" "public_ip_vm1" {
-  name                = "lb-public-ip-vm1"
+  name                = "example-public-ip-vm1"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Dynamic"
@@ -45,7 +45,7 @@ resource "azurerm_public_ip" "public_ip_vm1" {
 
 # Create Public IP for VM2
 resource "azurerm_public_ip" "public_ip_vm2" {
-  name                = "lb-public-ip-vm2"
+  name                = "example-public-ip-vm2"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Dynamic"
@@ -54,7 +54,7 @@ resource "azurerm_public_ip" "public_ip_vm2" {
 
 # Create Public IP for Load Balancer
 resource "azurerm_public_ip" "lb_public_ip" {
-  name                = "lb-lb-public-ip"
+  name                = "example-lb-public-ip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -62,8 +62,8 @@ resource "azurerm_public_ip" "lb_public_ip" {
 }
 
 # Create Load Balancer
-resource "azurerm_lb" "mylb" {
-  name                = "lb-lb"
+resource "azurerm_lb" "lb" {
+  name                = "example-lb"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
@@ -76,14 +76,14 @@ resource "azurerm_lb" "mylb" {
 
 # Create Load Balancer Backend Pool
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
-  loadbalancer_id = azurerm_lb.mylb.id
-  name            = "lb-backend-pool"
+  loadbalancer_id = azurerm_lb.lb.id
+  name            = "example-backend-pool"
 }
 
 # Create Load Balancer Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
-  loadbalancer_id     = azurerm_lb.mylb.id
-  name                = "my-health-probe"
+  loadbalancer_id     = azurerm_lb.lb.id
+  name                = "example-health-probe"
   protocol            = "Http"
   port                = 80
   request_path        = "/"
@@ -93,8 +93,8 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 
 # Create Load Balancer Rule for HTTP traffic
 resource "azurerm_lb_rule" "lb_rule" {
-  loadbalancer_id                = azurerm_lb.mylb.id
-  name                           = "lb-lb-rule"
+  loadbalancer_id                = azurerm_lb.lb.id
+  name                           = "example-lb-rule"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
@@ -105,7 +105,7 @@ resource "azurerm_lb_rule" "lb_rule" {
 
 # Create Network Security Group for VMs (Allow HTTP and SSH)
 resource "azurerm_network_security_group" "nsg" {
-  name                = "lb-nsg"
+  name                = "example-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -136,7 +136,7 @@ resource "azurerm_network_security_group" "nsg" {
 
 # Create Network Interface for VM1
 resource "azurerm_network_interface" "nic_vm1" {
-  name                = "lb-nic-vm1"
+  name                = "example-nic-vm1"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -150,7 +150,7 @@ resource "azurerm_network_interface" "nic_vm1" {
 
 # Create Network Interface for VM2
 resource "azurerm_network_interface" "nic_vm2" {
-  name                = "lb-nic-vm2"
+  name                = "example-nic-vm2"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -186,7 +186,7 @@ locals {
 
 # Create Virtual Machine 1
 resource "azurerm_linux_virtual_machine" "vm1" {
-  name                  = "lb-vm1"
+  name                  = "example-vm1"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm1.id]
@@ -214,7 +214,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
 
 # Create Virtual Machine 2
 resource "azurerm_linux_virtual_machine" "vm2" {
-  name                  = "lb-vm2"
+  name                  = "example-vm2"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm2.id]
