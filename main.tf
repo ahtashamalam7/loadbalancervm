@@ -62,10 +62,10 @@ resource "azurerm_public_ip" "lb_public_ip" {
 }
 
 # Create Load Balancer
-resource "azurerm_lb" "lb" {
+resource "azurerm_lb" "mylb" {
   name                = "lb-lb"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.myrg.location
+  resource_group_name = azurerm_resource_group.myrg.name
   sku                 = "Standard"
 
   frontend_ip_configuration {
@@ -76,14 +76,14 @@ resource "azurerm_lb" "lb" {
 
 # Create Load Balancer Backend Pool
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
-  loadbalancer_id = azurerm_lb.lb.id
+  loadbalancer_id = azurerm_lb.mylb.id
   name            = "lb-backend-pool"
 }
 
 # Create Load Balancer Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
-  loadbalancer_id     = azurerm_lb.lb.id
-  name                = "lb-health-probe"
+  loadbalancer_id     = azurerm_lb.mylb.id
+  name                = "my-health-probe"
   protocol            = "Http"
   port                = 80
   request_path        = "/"
@@ -93,13 +93,14 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 
 # Create Load Balancer Rule for HTTP traffic
 resource "azurerm_lb_rule" "lb_rule" {
-  loadbalancer_id                = azurerm_lb.lb.id
+  loadbalancer_id                = azurerm_lb.mylb.id
   name                           = "lb-lb-rule"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
   backend_port                   = 80
   probe_id                       = azurerm_lb_probe.lb_health_probe.id
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_backend_pool.id]  # Reference to backend pool
 }
 
 # Create Network Security Group for VMs (Allow HTTP and SSH)
