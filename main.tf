@@ -182,9 +182,6 @@ resource "azurerm_linux_virtual_machine" "vm1" {
   resource_group_name = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm1.id]
   size                = "Standard_DS1_v2"
-  admin_username      = "adminuser"
-  admin_password      = "Password1234!"
-  disable_password_authentication = false
 
   os_disk {
     caching              = "ReadWrite"
@@ -213,9 +210,6 @@ resource "azurerm_linux_virtual_machine" "vm2" {
   resource_group_name = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic_vm2.id]
   size                = "Standard_DS1_v2"
-  admin_username      = "adminuser"
-  admin_password      = "Password1234!"
-  disable_password_authentication = false
 
   os_disk {
     caching              = "ReadWrite"
