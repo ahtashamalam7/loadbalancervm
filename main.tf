@@ -15,13 +15,13 @@ provider "azurerm" {
 
 # Create Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "example-resources"
+  name     = "test"
   location = "East US"
 }
 
 # Create Virtual Network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "example-vnet"
+  name                = "test"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -29,7 +29,7 @@ resource "azurerm_virtual_network" "vnet" {
 
 # Create Subnet
 resource "azurerm_subnet" "subnet" {
-  name                 = "example-subnet"
+  name                 = "test"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -37,7 +37,7 @@ resource "azurerm_subnet" "subnet" {
 
 # Create Public IP for Load Balancer
 resource "azurerm_public_ip" "lb_public_ip" {
-  name                = "example-lb-public-ip"
+  name                = "test"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -46,7 +46,7 @@ resource "azurerm_public_ip" "lb_public_ip" {
 
 # Create Load Balancer
 resource "azurerm_lb" "lb" {
-  name                = "example-lb"
+  name                = "test"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
@@ -61,14 +61,14 @@ resource "azurerm_lb" "lb" {
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
   
   loadbalancer_id     = azurerm_lb.lb.id
-  name                = "example-backend-pool"
+  name                = "test"
 }
 
 # Create Load Balancer Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
  
   loadbalancer_id     = azurerm_lb.lb.id
-  name                = "example-health-probe"
+  name                = "test"
   protocol            = "Http"
   port                = 80
   request_path        = "/"
@@ -80,7 +80,7 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 resource "azurerm_lb_rule" "lb_rule" {
   
   loadbalancer_id                = azurerm_lb.lb.id
-  name                           = "example-lb-rule"
+  name                           = "test"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
@@ -92,7 +92,7 @@ resource "azurerm_lb_rule" "lb_rule" {
 
 # Network Security Group for VMs
 resource "azurerm_network_security_group" "nsg" {
-  name                = "example-nsg"
+  name                = "test"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -124,7 +124,7 @@ resource "azurerm_network_interface" "nic1" {
 
 # Create Network Interface for VM2
 resource "azurerm_network_interface" "nic2" {
-  name                = "example-nic2"
+  name                = "test"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -152,7 +152,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "nic2_lb_b
 
 # Create Virtual Machine 1
 resource "azurerm_linux_virtual_machine" "vm1" {
-  name                  = "example-vm1"
+  name                  = "testvm1"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic1.id]
@@ -176,7 +176,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
 
 # Create Virtual Machine 2
 resource "azurerm_linux_virtual_machine" "vm2" {
-  name                  = "example-vm2"
+  name                  = "testvm2"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   network_interface_ids = [azurerm_network_interface.nic2.id]
