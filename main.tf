@@ -145,7 +145,7 @@ resource "azurerm_network_interface" "nic_vm1" {
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.public_ip_vm1.id
-    load_balancer_backend_address_pools_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
+    backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_backend_pool.id]
   }
 }
 
