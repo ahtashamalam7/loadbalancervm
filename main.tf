@@ -15,13 +15,13 @@ provider "azurerm" {
 
 # Create Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "test"
+  name     = "lb-rg"
   location = "East US"
 }
 
 # Create Virtual Network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "test"
+  name                = "lb-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -29,15 +29,32 @@ resource "azurerm_virtual_network" "vnet" {
 
 # Create Subnet
 resource "azurerm_subnet" "subnet" {
-  name                 = "test"
+  name                 = "lb-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
+# Create Public IP for VM1
+resource "azurerm_public_ip" "public_ip_vm1" {
+  name                = "lb-public-ip-vm1"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Dynamic"
+}
+
+# Create Public IP for VM2
+resource "azurerm_public_ip" "public_ip_vm2" {
+  name                = "lb-public-ip-vm2"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Dynamic"
+}
+
+
 # Create Public IP for Load Balancer
 resource "azurerm_public_ip" "lb_public_ip" {
-  name                = "test"
+  name                = "lb-lb-public-ip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
@@ -46,7 +63,7 @@ resource "azurerm_public_ip" "lb_public_ip" {
 
 # Create Load Balancer
 resource "azurerm_lb" "lb" {
-  name                = "test"
+  name                = "lb-lb"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
@@ -59,16 +76,14 @@ resource "azurerm_lb" "lb" {
 
 # Create Load Balancer Backend Pool
 resource "azurerm_lb_backend_address_pool" "lb_backend_pool" {
-  
-  loadbalancer_id     = azurerm_lb.lb.id
-  name                = "test"
+  loadbalancer_id = azurerm_lb.lb.id
+  name            = "lb-backend-pool"
 }
 
 # Create Load Balancer Health Probe
 resource "azurerm_lb_probe" "lb_health_probe" {
- 
   loadbalancer_id     = azurerm_lb.lb.id
-  name                = "test"
+  name                = "lb-health-probe"
   protocol            = "Http"
   port                = 80
   request_path        = "/"
@@ -78,21 +93,18 @@ resource "azurerm_lb_probe" "lb_health_probe" {
 
 # Create Load Balancer Rule for HTTP traffic
 resource "azurerm_lb_rule" "lb_rule" {
-  
   loadbalancer_id                = azurerm_lb.lb.id
-  name                           = "test"
+  name                           = "lb-lb-rule"
   protocol                       = "Tcp"
   frontend_ip_configuration_name = "PublicIPAddress"
   frontend_port                  = 80
   backend_port                   = 80
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_backend_pool.id]  # Corrected this line
   probe_id                       = azurerm_lb_probe.lb_health_probe.id
 }
 
-
-# Network Security Group for VMs
+# Create Network Security Group for VMs (Allow HTTP and SSH)
 resource "azurerm_network_security_group" "nsg" {
-  name                = "test"
+  name                = "lb-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -107,11 +119,23 @@ resource "azurerm_network_security_group" "nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
 # Create Network Interface for VM1
-resource "azurerm_network_interface" "nic1" {
-  name                = "example-nic1"
+resource "azurerm_network_interface" "nic_vm1" {
+  name                = "lb-nic-vm1"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -119,12 +143,13 @@ resource "azurerm_network_interface" "nic1" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip_vm1.id
   }
 }
 
 # Create Network Interface for VM2
-resource "azurerm_network_interface" "nic2" {
-  name                = "test"
+resource "azurerm_network_interface" "nic_vm2" {
+  name                = "lb-nic-vm2"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
@@ -132,32 +157,39 @@ resource "azurerm_network_interface" "nic2" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip_vm2.id
   }
 }
 
-# Associate Network Interface 1 with the Load Balancer Backend Pool
-resource "azurerm_network_interface_backend_address_pool_association" "nic1_lb_backend_pool_assoc" {
-  network_interface_id    = azurerm_network_interface.nic1.id
-  ip_configuration_name   = "internal"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_backend_pool.id
+# Associate NSG with Network Interface for VM1
+resource "azurerm_network_interface_security_group_association" "nsg_assoc_vm1" {
+  network_interface_id      = azurerm_network_interface.nic_vm1.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
-# Associate Network Interface 2 with the Load Balancer Backend Pool
-resource "azurerm_network_interface_backend_address_pool_association" "nic2_lb_backend_pool_assoc" {
-  network_interface_id    = azurerm_network_interface.nic2.id
-  ip_configuration_name   = "internal"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lb_backend_pool.id
+# Associate NSG with Network Interface for VM2
+resource "azurerm_network_interface_security_group_association" "nsg_assoc_vm2" {
+  network_interface_id      = azurerm_network_interface.nic_vm2.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+locals {
+  custom_script = <<-EOF
+    #!/bin/bash
+    apt-get update
+    apt-get install -y apache2
+    echo "Welcome to VM1 - IP: $(hostname -I)" > /var/www/html/index.html
+  EOF
 }
 
 
 # Create Virtual Machine 1
 resource "azurerm_linux_virtual_machine" "vm1" {
-  name                  = "testvm1"
+  name                  = "lb-vm1"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
-  network_interface_ids = [azurerm_network_interface.nic1.id]
+  network_interface_ids = [azurerm_network_interface.nic_vm1.id]
   size                  = "Standard_B1s"
-
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
@@ -169,19 +201,23 @@ resource "azurerm_linux_virtual_machine" "vm1" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+  custom_data = base64encode(local.custom_script)
 
-  admin_username = "azureuser"
-  admin_password = "Password1234!"
+  admin_username = "alam"
+  admin_password = "Ahtashamalam@123"
+
+  # Enable password authentication
+  disable_password_authentication = false
+
 }
 
 # Create Virtual Machine 2
 resource "azurerm_linux_virtual_machine" "vm2" {
-  name                  = "testvm2"
+  name                  = "lb-vm2"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
-  network_interface_ids = [azurerm_network_interface.nic2.id]
+  network_interface_ids = [azurerm_network_interface.nic_vm2.id]
   size                  = "Standard_B1s"
-
   os_disk {
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
@@ -193,7 +229,12 @@ resource "azurerm_linux_virtual_machine" "vm2" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+  custom_data = base64encode(local.custom_script)
 
-  admin_username = "azureuser"
-  admin_password = "Password1234!"
+  admin_username = "alam"
+  admin_password = "Ahtashamalam@123"
+
+  # Enable password authentication
+  disable_password_authentication = false
+
 }
