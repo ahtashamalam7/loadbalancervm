@@ -64,8 +64,8 @@ resource "azurerm_public_ip" "lb_public_ip" {
 # Create Load Balancer
 resource "azurerm_lb" "mylb" {
   name                = "lb-lb"
-  location            = azurerm_resource_group.myrg.location
-  resource_group_name = azurerm_resource_group.myrg.name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
 
   frontend_ip_configuration {
